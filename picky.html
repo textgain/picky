@@ -15,6 +15,9 @@
 		.var {
 			margin: 5px;
 		}
+		.var a {
+			text-decoration: none;
+		}
 		label {
 			display: inline-block;
 			margin-right: 5px;
@@ -61,14 +64,14 @@
 			position: relative;
 			display: inline-block;
 		}
-		.view div img {
+		.view img {
 			min-width: 240px;
 			min-height: 240px;
 			max-width: 720px;
 			max-height: 480px;
 			border: 1px solid #ccc;
 		}
-		.view div a {
+		.view a {
 			position: absolute;
 			display: block;
 			min-width: 50px;
@@ -79,12 +82,27 @@
 			color: white;
 			text-decoration: none;
 		}
-		a#T {    top:  0%;  left: 50%; transform: translate(-50%, -50%); }
-		a#L {    top: 50%;  left:  0%; transform: translate(-50%, -50%); }
-		a#R {    top: 50%; right:  0%; transform: translate(+50%, -50%); }
-		a#B { bottom:  0%;  left: 50%; transform: translate(-50%, +50%); }
-		a#R:after  { content: ' \25B6'  ; font-size: 0.75em; }
-		a#L:before { content:  '\25C0\ '; font-size: 0.75em; }
+		.view a#T {    top:  0%;  left: 50%; transform: translate(-50%, -50%); }
+		.view a#L {    top: 50%;  left:  0%; transform: translate(-50%, -50%); }
+		.view a#R {    top: 50%; right:  0%; transform: translate(+50%, -50%); }
+		.view a#B { bottom:  0%;  left: 50%; transform: translate(-50%, +50%); }
+		
+		.view a:before,
+		.view a:after {
+			font-size: 0.75em; 
+		}
+		.view a#T:empty:before { 
+			content:  '\25b2'; /* ▲ */
+		}
+		.view a#L:before { 
+			content:  '\25C0\ '; 
+		}
+		.view a#R:after { 
+			content: ' \25B6'; 
+		}
+		.view a#B:empty:before { 
+			content:  '\25bc';
+		}
 		#text {
 			margin-top: 25px;
 			width: 230px;
@@ -147,7 +165,7 @@
 			$('labels').value     = '';
 			$('text'  ).innerHTML = '';
 			$('image' ).src       = '#';
-			
+			//console.log(texts)
 			var img = images[i];
 			if (img) {
 				$('index' ).value     = i;
@@ -304,6 +322,8 @@
 	<div class="var">
 		<label>index</label>
 		<input type="number" id="index" onchange="goto(this.value);" />
+		<a href="#" onclick="bwd(); return false;">&laquo;</a>
+		<a href="#" onclick="fwd(); return false;">&raquo;</a>
 	</div>
 
 	<div class="var">
@@ -322,7 +342,7 @@
 		<a class="button" id="save" href="" onclick="save(this);">Save</a>
 		<input type="checkbox" id="auto" /> auto
 	<div>
-
+	
 	<div class="view">
 		<div>
 			<img id="image" src="" /><br />
@@ -332,8 +352,9 @@
 			<a id="B" href="#" onclick="tag(this.innerHTML); return false;"></a>
 		</div>
 	</div>
-
+	
 	<p id="text"></p>
-
+	
 </body>
+
 </html>
