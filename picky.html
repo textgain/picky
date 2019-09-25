@@ -1,0 +1,339 @@
+<html>
+
+<head>
+	
+	<style>
+		* { 
+			font: 12px Arial;
+			line-height: 1em;
+			color: #555;
+		}
+		body {
+			margin: 25px;
+		}
+		.var {
+			margin: 5px;
+		}
+		label {
+			display: inline-block;
+			margin-right: 5px;
+			width: 40px;
+			text-align: right;
+			text-transform: uppercase;
+			font-size: 0.75em;
+		}
+		input, select, textarea, button { 
+			outline: none; 
+		}
+		input[type="text"],
+		input[type="number"] { 
+			border: 0;
+			border-bottom: 1px solid #ccc; 
+			padding: 2px 0;
+		}
+		input[type="text"],
+		input[type="number"],
+		textarea {
+			width: 180px;
+		}
+		textarea {
+			height: 90px;
+			border: 1px solid #ccc;
+			padding: 4px;
+		}
+		.button {
+			display: inline-block;
+			padding: 6px 8px;
+			background: dodgerblue;
+			color: white;
+			text-decoration: none;
+		}
+		.view {
+			position: absolute;
+			top: 40px;
+			left: 320px;
+			width: 720px;
+			height: 480px;
+			text-align: center;
+		}
+		.view div {
+			position: relative;
+			display: inline-block;
+		}
+		.view div img {
+			min-width: 240px;
+			min-height: 240px;
+			max-width: 720px;
+			max-height: 480px;
+			border: 1px solid #ccc;
+		}
+		.view div a {
+			position: absolute;
+			display: block;
+			min-width: 50px;
+			min-height: 1em;
+			padding: 8px;
+			border: 1px solid rgba(255,255,255,0.25);
+			background: rgba(0,0,0,0.75);
+			color: white;
+			text-decoration: none;
+		}
+		a#T {    top:  0%;  left: 50%; transform: translate(-50%, -50%); }
+		a#L {    top: 50%;  left:  0%; transform: translate(-50%, -50%); }
+		a#R {    top: 50%; right:  0%; transform: translate(+50%, -50%); }
+		a#B { bottom:  0%;  left: 50%; transform: translate(-50%, +50%); }
+		a#R:after  { content: ' \25B6'  ; font-size: 0.75em; }
+		a#L:before { content:  '\25C0\ '; font-size: 0.75em; }
+		#text {
+			margin-top: 25px;
+			width: 230px;
+			font-size: 1.2em;
+			line-height: 1.4em;
+		}
+	</style>
+	
+	<script>
+		
+		var images = []; // [File1, File2, ...]
+		var texts  = {}; // {image: text}
+		var labels = {}; // {image: [label1, label2, ...]}
+		var index  = 0;
+		
+		var controls = {
+			'T' : 'text+image',
+			'L' : 'text',
+			'R' : 'image',
+			'B' : ''
+		};
+		
+		function $(id) {
+			return document.getElementById(id);
+		}
+		
+		function readAsJSON(file, v) {
+			// Parse JSON-file & assign to object.
+			var f;
+			f = new FileReader();
+			f.onload = function() { 
+				window[v] = JSON.parse(f.result); 
+				refresh();
+			};
+			f.readAsText(file);
+		}
+		
+		function loadImages(input) {
+			images = input.files;
+			index = 0;
+			show(0);
+		}
+		
+		function loadTexts(input) {
+			readAsJSON(input.files[0], 'texts');
+		}
+		
+		function loadLabels(input) {
+			readAsJSON(input.files[0], 'labels');
+		}
+		
+		function refresh() {
+			show(index);
+		}
+		
+		function show(i) {
+			// Show image with given index + labels.
+			$('index' ).value     = '';
+			$('name'  ).value     = '';
+			$('labels').value     = '';
+			$('text'  ).innerHTML = '';
+			$('image' ).src       = '#';
+			//console.log(texts)
+			var img = images[i];
+			if (img) {
+				$('index' ).value     = i;
+				$('name'  ).value     = img.name;
+				$('labels').value     = (labels[img.name] || []).join(', ');
+				$('text'  ).innerHTML = (texts[ img.name] || '');
+				f = new FileReader();
+				f.onload = function() {
+					try {
+						$('image').src = f.result; 
+					} catch(e) {
+					}
+				};
+				f.readAsDataURL(img);
+			}
+		}
+		
+		function customize(k, v) {
+			// Assign label v to control k (T/L/R/B).
+			controls[k] = $(k).innerHTML = v;
+		}
+		
+		function bwd() {
+			// Show previous image (if any).
+			index = Math.max(index-1, -1);
+			show(index);
+		}
+		
+		function fwd() {
+			// Show next image (if any).
+			index = Math.min(index+1, images.length);
+			show(index);
+		}
+		
+		function goto(i) {
+			// Show image with index i.
+			index = Math.min(Math.max(parseInt(i) || 0, 0), images.length-1);
+			show(index);
+		}
+		
+		function tag(v) {
+			// 1) Add label v to current image.
+			// 2) Show next image.
+			var img = images[index];
+			if (img && v) {
+				var k = img.name;
+				if (labels[k] == undefined) {
+					labels[k] = [];
+				}
+				if (labels[k].includes(v) == false) {
+					labels[k].push(v);
+				}
+			}
+			fwd();
+		}
+		
+		function edit(s) {
+			// Replace labels on current image, 
+			// from comma-separated string.
+			var img = images[index];
+			if (img) {
+				var k = img.name;
+				var a = s.split(',');
+				for (var i=0; i < a.length; i++) {
+					a[i] = a[i].trim();
+				}
+				labels[k] = a;
+			}
+		}
+		
+		function save(a) {
+			// Generate JSON-file from labels at <a>.
+			var f;
+			f = JSON.stringify(labels);
+			f = new File([f], {type: 'text/plain'});
+			f = URL.createObjectURL(f);
+			a.download = 'labels.json';
+			a.href = f;
+		}
+		
+		window.onload = function() {
+			
+			//    Controls:
+			// 1) Backspace & tab show previous/next image.
+			// 2) Up, down, left, right add label to image.
+			// 3) As long as no field has the focus.
+			document.addEventListener('keydown', function(e) {
+				if (['a', 'input', 'textarea'].includes(e.target.tagName.toLowerCase())) {
+					return;
+				} else if (e.keyCode == '8' ) { // BACKSPACE
+					bwd();
+				} else if (e.keyCode == '9' ) { // TAB
+					fwd();
+				} else if (e.keyCode == '38') { // T
+					tag($('T').innerHTML);
+				} else if (e.keyCode == '37') { // L
+					tag($('L').innerHTML);
+				} else if (e.keyCode == '39') { // R
+					tag($('R').innerHTML);
+				} else if (e.keyCode == '40') { // B
+					tag($('B').innerHTML);
+				} else {
+					return;
+				}
+				e.preventDefault();
+			});
+			
+			// Autosave every 10 mins
+			setInterval(function() {
+				if ($('auto').checked) {
+					save($('save'));
+					$('save').click();
+				}
+			}, 1000 * 60 * 10);
+		}
+
+	</script>
+</head>
+
+<body>
+	
+	<div class="var">
+		<label>images</label>
+		<input type="file" onchange="loadImages(this);" multiple />
+	</div>
+	
+	<div class="var">
+		<label>texts</label>
+		<input type="file" onchange="loadTexts(this);" />
+	</div>
+	
+	<div class="var">
+		<label>labels</label>
+		<input type="file" onchange="loadLabels(this);" />
+	</div>
+	
+	<div class="var">
+		<label>&#9650;</label>
+		<input type="text" onchange="customize('T', this.value);" value="text+image" />
+	</div>
+	<div class="var">
+		<label>&#9664;</label>
+		<input type="text" onchange="customize('L', this.value);" value="text" />
+	</div>
+	<div class="var">
+		<label>&#9654;</label>
+		<input type="text" onchange="customize('R', this.value);" value="image" />
+	</div>
+	<div class="var">
+		<label>&#9660;</label>
+		<input type="text" onchange="customize('B', this.value);" value="" />
+	</div>
+	
+	<div class="var">
+		<label>index</label>
+		<input type="number" id="index" onchange="goto(this.value);" />
+	</div>
+
+	<div class="var">
+		<label>name</label>
+		<input type="text" id="name" disabled />
+	</div>
+
+	<br />
+	<div class="var">
+		<label></label>
+		<textarea id="labels" onchange="edit(this.value);"></textarea>
+	</div>
+
+	<div class="var">
+		<label></label>
+		<a class="button" id="save" href="" onclick="save(this);">Save</a>
+		<input type="checkbox" id="auto" /> auto
+	<div>
+	
+	<div class="view">
+		<div>
+			<img id="image" src="" /><br />
+			<a id="L" href="#" onclick="tag(this.innerHTML); return false;">text</a>
+			<a id="T" href="#" onclick="tag(this.innerHTML); return false;">text+image</a>
+			<a id="R" href="#" onclick="tag(this.innerHTML); return false;">image</a>
+			<a id="B" href="#" onclick="tag(this.innerHTML); return false;"></a>
+		</div>
+	</div>
+	
+	<p id="text"></p>
+	
+</body>
+
+</html>
