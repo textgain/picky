@@ -1,13 +1,14 @@
 <!doctype html>
 <html>
 <head>
+	<title>Picky</title>
+	<meta name="author" content="Textgain">
 	<meta charset="utf-8">
 	
 	<style>
 		* { 
-			font: 12px Arial;
-			line-height: 1em;
 			color: #555;
+			font: 12px/1em Arial;
 		}
 		body {
 			margin: 25px;
@@ -18,39 +19,48 @@
 		.var a {
 			text-decoration: none;
 		}
-		label {
+		label { /* "    LABEL " */
 			display: inline-block;
-			margin-right: 5px;
 			width: 40px;
+			margin-right: 5px;
+			font-size: 0.75em;
 			text-align: right;
 			text-transform: uppercase;
-			font-size: 0.75em;
 		}
-		input, select, textarea, button { 
+		input, select, textarea, button, .button { 
 			outline: none; 
 		}
 		input[type="text"],
 		input[type="number"] { 
+			padding: 2px 0;
 			border: 0;
 			border-bottom: 1px solid #ccc; 
-			padding: 2px 0;
 		}
 		input[type="text"],
 		input[type="number"],
 		textarea {
+			box-sizing: border-box;
 			width: 180px;
 		}
 		textarea {
 			height: 90px;
-			border: 1px solid #ccc;
 			padding: 4px;
+			border: 1px solid #ccc;
 		}
 		.button {
 			display: inline-block;
-			padding: 6px 8px;
-			background: dodgerblue;
-			color: white;
+			padding: 8px;
+			border: 1px solid #ccc;
+			border-radius: 8px;
+			color: inherit;
+			background: #fff;
 			text-decoration: none;
+		}
+		.button:hover, 
+		.button.hot {
+			color: white;
+			background: rgb(0,150,255);
+			border: 1px solid rgb(0,150,255);
 		}
 		.view {
 			position: absolute;
@@ -59,6 +69,7 @@
 			width: 720px;
 			height: 480px;
 			text-align: center;
+		 /* border: 1px dotted red; */
 		}
 		.view div {
 			position: relative;
@@ -74,12 +85,13 @@
 		.view a {
 			position: absolute;
 			display: block;
-			min-width: 50px;
+			min-width: 45px;
 			min-height: 1em;
 			padding: 8px;
-			border: 1px solid rgba(255,255,255,0.25);
-			background: rgba(0,0,0,0.75);
+			border: 1px solid rgba(255,255,255,0.6);
+			border-radius: 8px;
 			color: white;
+			background: rgba(0,0,0,0.6);
 			text-decoration: none;
 		}
 		.view a#T {    top:  0%;  left: 50%; transform: translate(-50%, -50%); }
@@ -115,13 +127,13 @@
 		
 		var images = []; // [File1, File2, ...]
 		var texts  = {}; // {image: text}
-		var labels = {}; // {image: [label1, label2, ...]}
+		var tags   = {}; // {image: [tag1, tag2, ...]}
 		var index  = 0;
 		
 		var controls = {
-			'T' : 'text+image',
-			'L' : 'text',
-			'R' : 'image',
+			'T' : '',
+			'L' : 'bad',
+			'R' : 'good',
 			'B' : ''
 		};
 		
@@ -129,12 +141,12 @@
 			return document.getElementById(id);
 		}
 		
-		function readAsJSON(file, v) {
+		function readAsJSON(file, o) {
 			// Parse JSON-file & assign to object.
-			var f;
+			let f;
 			f = new FileReader();
 			f.onload = function() { 
-				window[v] = JSON.parse(f.result); 
+				window[o] = JSON.parse(f.result); 
 				refresh();
 			};
 			f.readAsText(file);
@@ -150,8 +162,8 @@
 			readAsJSON(input.files[0], 'texts');
 		}
 		
-		function loadLabels(input) {
-			readAsJSON(input.files[0], 'labels');
+		function loadTags(input) {
+			readAsJSON(input.files[0], 'tags');
 		}
 		
 		function refresh() {
@@ -159,19 +171,19 @@
 		}
 		
 		function show(i) {
-			// Show image with given index + labels.
-			$('index' ).value     = '';
-			$('name'  ).value     = '';
-			$('labels').value     = '';
-			$('text'  ).innerHTML = '';
-			$('image' ).src       = '#';
+			// Show image with given index + tags.
+			$('index').value     = '';
+			$('name' ).value     = '';
+			$('tags' ).value     = '';
+			$('text' ).innerHTML = '';
+			$('image').src       = '#';
 			
-			var img = images[i];
+			let img = images[i];
 			if (img) {
-				$('index' ).value     = i;
-				$('name'  ).value     = img.name;
-				$('labels').value     = (labels[img.name] || []).join(', ');
-				$('text'  ).innerHTML = (texts[ img.name] || '');
+				$('index').value     = i;
+				$('name' ).value     = img.name;
+				$('tags' ).value     = (tags[img.name] || []).join(', ');
+				$('text' ).innerHTML = (texts[ img.name] || '');
 				f = new FileReader();
 				f.onload = function() {
 					try {
@@ -184,12 +196,12 @@
 		}
 		
 		function customize(k, v) {
-			// Assign label v to control k (T/L/R/B).
+			// Assign tag v to control k (T/L/R/B).
 			controls[k] = $(k).innerHTML = v;
 		}
 		
 		function bwd() {
-			// Show previous image (if any).
+			// Show prev image (if any).
 			index = Math.max(index-1, -1);
 			show(index);
 		}
@@ -202,55 +214,62 @@
 		
 		function goto(i) {
 			// Show image with index i.
-			index = Math.min(Math.max(parseInt(i) || 0, 0), images.length-1);
+			index = Math.max(parseInt(i) || 0, 0);
+			index = Math.min(index, images.length-1);
 			show(index);
 		}
 		
 		function tag(v) {
-			// 1) Add label v to current image.
+			// 1) Add tag v to current image.
 			// 2) Show next image.
-			var img = images[index];
+			let img = images[index];
 			if (img && v) {
-				var k = img.name;
-				if (labels[k] == undefined) {
-					labels[k] = [];
+				let k = img.name;
+				if (tags[k] == undefined) {
+					tags[k] = [];
 				}
-				if (labels[k].includes(v) == false) {
-					labels[k].push(v);
+				if (tags[k].includes(v) == false) {
+					tags[k].push(v);
 				}
 			}
 			fwd();
+			
+			$('save').classList.add('hot'); // (unsaved changes)
 		}
 		
 		function edit(s) {
-			// Replace labels on current image, 
+			// Replace tags on current image, 
 			// from comma-separated string.
-			var img = images[index];
+			let img = images[index];
 			if (img) {
-				var k = img.name;
-				var a = s.split(',');
-				for (var i=0; i < a.length; i++) {
+				let k = img.name;
+				let a = s.split(',');
+				for (let i=0; i < a.length; i++) {
 					a[i] = a[i].trim();
 				}
-				labels[k] = a;
+				tags[k] = a;
 			}
+			
+			$('save').classList.add('hot'); // (unsaved changes)
 		}
 		
 		function save(a) {
-			// Generate JSON-file from labels at <a>.
-			var f;
-			f = JSON.stringify(labels);
+			// Generate JSON-file from tags at <a>.
+			let f;
+			f = JSON.stringify(tags);
 			f = new File([f], {type: 'text/plain'});
 			f = URL.createObjectURL(f);
-			a.download = 'labels.json';
+			a.download = 'tags.json';
 			a.href = f;
+			
+			$('save').classList.remove('hot');
 		}
 		
 		window.onload = function() {
 			
 			//    Controls:
 			// 1) Backspace & tab show previous/next image.
-			// 2) Up, down, left, right add label to image.
+			// 2) Up, down, left, right add tasg to image.
 			// 3) As long as no field has the focus.
 			document.addEventListener('keydown', function(e) {
 				if (['a', 'input', 'textarea'].includes(e.target.tagName.toLowerCase())) {
@@ -298,21 +317,21 @@
 	</div>
 	
 	<div class="var">
-		<label>labels</label>
-		<input type="file" onchange="loadLabels(this);" />
+		<label>tags</label>
+		<input type="file" onchange="loadTags(this);" />
 	</div>
 	
 	<div class="var">
 		<label>&#9650;</label>
-		<input type="text" onchange="customize('T', this.value);" value="text+image" />
+		<input type="text" onchange="customize('T', this.value);" value="" />
 	</div>
 	<div class="var">
 		<label>&#9664;</label>
-		<input type="text" onchange="customize('L', this.value);" value="text" />
+		<input type="text" onchange="customize('L', this.value);" value="bad" />
 	</div>
 	<div class="var">
 		<label>&#9654;</label>
-		<input type="text" onchange="customize('R', this.value);" value="image" />
+		<input type="text" onchange="customize('R', this.value);" value="good" />
 	</div>
 	<div class="var">
 		<label>&#9660;</label>
@@ -325,36 +344,36 @@
 		<a href="#" onclick="bwd(); return false;">&laquo;</a>
 		<a href="#" onclick="fwd(); return false;">&raquo;</a>
 	</div>
-
+	
 	<div class="var">
 		<label>name</label>
 		<input type="text" id="name" disabled />
 	</div>
-
+	
 	<br />
 	<div class="var">
 		<label></label>
-		<textarea id="labels" onchange="edit(this.value);"></textarea>
+		<textarea id="tags" onchange="edit(this.value);"></textarea>
 	</div>
-
+	
 	<div class="var">
 		<label></label>
 		<a class="button" id="save" href="" onclick="save(this);">Save</a>
 		<input type="checkbox" id="auto" /> auto
-	<div>
+	</div>
 	
 	<div class="view">
 		<div>
 			<img id="image" src="" /><br />
-			<a id="L" href="#" onclick="tag(this.innerHTML); return false;">text</a>
-			<a id="T" href="#" onclick="tag(this.innerHTML); return false;">text+image</a>
-			<a id="R" href="#" onclick="tag(this.innerHTML); return false;">image</a>
+			<a id="L" href="#" onclick="tag(this.innerHTML); return false;">bad</a>
+			<a id="T" href="#" onclick="tag(this.innerHTML); return false;"></a>
+			<a id="R" href="#" onclick="tag(this.innerHTML); return false;">good</a>
 			<a id="B" href="#" onclick="tag(this.innerHTML); return false;"></a>
 		</div>
 	</div>
 	
 	<p id="text"></p>
-	
+
 </body>
 
 </html>
